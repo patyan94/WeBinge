@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="horizontal"
+    android:padding="4dp">
+
+    <ImageView
+        android:id="@+id/serie_poster"
+        android:layout_width="60dp"
+        android:layout_height="60dp"
+        android:layout_margin="4dp"
+        android:background="@color/imageBackgroundColor"/>
+    <TextView
+        android:id="@+id/serie_name"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:layout_marginTop="12dp"
+        android:textSize="15dp"
+        android:textColor="@color/colorPrimary"
+        android:text="Name"/>
+    <Button
+        android:id="@+id/add_serie_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:background="@drawable/buttonborderpositive"
+        android:textColor="#EFEFEF"
+        android:layout_margin="1dp"
+        android:text="Add"/>
+</LinearLayout>

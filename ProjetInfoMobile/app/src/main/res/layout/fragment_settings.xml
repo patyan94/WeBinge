@@ -1,0 +1,74 @@
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="16dp"
+    tools:context=".Settings">
+
+    <!-- TODO: Update blank fragment layout -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+            <TextView
+                android:textStyle="bold"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:layout_marginTop="12dp"
+                android:textSize="15dp"
+                android:textColor="@color/colorPrimary"
+                android:text="BACKGROUND COLOR" />
+            <Spinner
+                android:id="@+id/color_picking_spinner"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="@color/colorPrimary">
+            </Spinner>
+        </LinearLayout>
+        <TextView
+            android:textStyle="bold"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:layout_marginTop="12dp"
+            android:textSize="15dp"
+            android:textColor="@color/colorPrimary"
+            android:text="Profile picture" />
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_gravity="center">
+            <ImageView
+                android:id="@+id/profile_picture"
+                android:layout_gravity="center"
+                android:layout_width="300dp"
+                android:layout_height="300dp"
+                android:background="@color/imageBackgroundColor"
+                android:layout_margin="4dp"/>
+            <Button
+                android:id="@+id/profile_picture_selection"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Pick profile picture"
+                android:background="@drawable/buttonborderpositive"
+                android:textColor="#EFEFEF"/>
+        </LinearLayout>
+        <CheckBox
+            android:id="@+id/share_position_checkbox"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:gravity="center"
+            android:layout_marginTop="12dp"
+            android:textSize="15dp"
+            android:textColor="@color/colorPrimary"
+            android:text="Share position"/>
+    </LinearLayout>
+
+</FrameLayout>
