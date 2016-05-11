@@ -144,7 +144,7 @@ public class FriendsFragment extends Fragment {
                     }
                 });
                 // Fetch the user photo
-                FirebaseInterface.Instance().GetUserDataNode(username).addListenerForSingleValueEvent(new ValueEventListener() {
+                FirebaseInterface.Instance().GetUserNode(username).addListenerForSingleValueEvent(new ValueEventListener() {
                     @Override
                     public void onDataChange(DataSnapshot dataSnapshot) {
                         UserModel userData = dataSnapshot.getValue(UserModel.class);
@@ -187,7 +187,7 @@ public class FriendsFragment extends Fragment {
                 });
 
                 // Fetch the user photo
-                FirebaseInterface.Instance().GetUserDataNode(username).addListenerForSingleValueEvent(new ValueEventListener() {
+                FirebaseInterface.Instance().GetUserNode(username).addListenerForSingleValueEvent(new ValueEventListener() {
                     @Override
                     public void onDataChange(DataSnapshot dataSnapshot) {
                         UserModel userData = dataSnapshot.getValue(UserModel.class);
@@ -206,7 +206,7 @@ public class FriendsFragment extends Fragment {
         friendRequestsListview.setAdapter(friendsRequestListAdapter);
 
         // Keeps the users list up to date for the autocomplete
-        usernameQuery = FirebaseInterface.Instance().GetUsersIDNode();
+        usernameQuery = FirebaseInterface.Instance().GetUsersNode();
         usernameQuery.addChildEventListener(new ChildEventListener() {
             @Override
             public void onChildAdded(DataSnapshot dataSnapshot, String s) {

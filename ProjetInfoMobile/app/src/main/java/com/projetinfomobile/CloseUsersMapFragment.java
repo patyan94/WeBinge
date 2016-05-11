@@ -1,11 +1,15 @@
 package com.projetinfomobile;
 
 import android.Manifest;
+import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.os.Bundle;
 import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.LocalBroadcastManager;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -37,16 +41,27 @@ import Controller.UserController;
 import Interfaces.FirebaseInterface;
 
 public class CloseUsersMapFragment extends SupportMapFragment
-        implements OnMapReadyCallback, LocationListener, GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener {
+        implements OnMapReadyCallback {
 
 
     private UserController userController = UserController.Instance();
     private HashMap<String, MarkerOptions> closeUsersLocations = new HashMap<>();
     private HashMap<String, Marker> actualMarkersUsers = new HashMap<>();
     private GoogleMap map;
-    private GoogleApiClient mGoogleApiClient;
-    LocationRequest mLocationRequest;
     private HashMap<String, List<String>> closeUsersSeries;
+
+    private BroadcastReceiver mMessageReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            // Get extra data included in the Intent
+            Bundle b = intent.getBundleExtra("Location");
+            Location location = (Location) b.getParcelable("Location");
+            if(location != null){
+                FirebaseInterface.Instance().StartListeningToCloseUsers(location, 1000.f, geoQueryEventListener);
+                FirebaseInterface.Instance().UpdateGeoQueryPosition(location);
+            }
+        }
+    };
 
     public CloseUsersMapFragment() {
         closeUsersSeries = new HashMap<>();
@@ -61,14 +76,13 @@ public class CloseUsersMapFragment extends SupportMapFragment
         if(!userController.GetUserModel().isSharePosition()){
             Toast.makeText(getContext(), "In order to be able to use this functionality, please enable the location sharing setting", Toast.LENGTH_LONG).show();
         }
+        LocalBroadcastManager.getInstance(getActivity()).registerReceiver(
+                mMessageReceiver, new IntentFilter("UserPositionUpdate"));
     }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,Bundle savedInstanceState) {
         View v = super.onCreateView(inflater, container, savedInstanceState);
-
-        //Inflate the layout for this fragment
-        //View v = inflater.inflate(R.layout.fragment_map, container, false);
 
         getMapAsync(this);
         return v;
@@ -77,60 +91,12 @@ public class CloseUsersMapFragment extends SupportMapFragment
     @Override
     public void onAttach(Context context) {
         super.onAttach(context);
-        mGoogleApiClient = new GoogleApiClient.Builder(context)
-                .addConnectionCallbacks(this)
-                .addOnConnectionFailedListener(this)
-                .addApi(LocationServices.API)
-                .build();
-        mGoogleApiClient.connect();
     }
 
     @Override
     public void onDetach() {
         super.onDetach();
         FirebaseInterface.Instance().StopListeningToCloseUsers();
-        mGoogleApiClient.disconnect();
-    }
-
-    @Override
-    public void onConnected(Bundle bundle) {
-        if (ActivityCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            // TODO: Consider calling
-            //    ActivityCompat#requestPermissions
-            // here to request the missing permissions, and then overriding
-            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-            //                                          int[] grantResults)
-            // to handle the case where the user grants the permission. See the documentation
-            // for ActivityCompat#requestPermissions for more details.
-            Toast.makeText(getContext(), "Please allow this application to use your location from Android/Applications settings", Toast.LENGTH_LONG).show();
-            return;
-        }
-        Location mLastLocation = LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient);
-        // Creates location requests every 5-60 sec
-        mLocationRequest = new LocationRequest();
-        mLocationRequest.setInterval(30000);
-        mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
-        mLocationRequest.setFastestInterval(5000);
-        LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient, mLocationRequest, this);
-
-    }
-
-    @Override
-    public void onConnectionSuspended(int i) {
-
-    }
-
-    @Override
-    public void onLocationChanged(Location location) {
-        //if(mLastLocation != null && location.distanceTo(mLastLocation)<50.f)return;
-        FirebaseInterface.Instance().StartListeningToCloseUsers(location, 1000.f, geoQueryEventListener);
-        FirebaseInterface.Instance().UpdateGeoQueryPosition(location);
-        userController.UpdateUserPosition(location);
-    }
-
-    @Override
-    public void onConnectionFailed(ConnectionResult connectionResult) {
-
     }
 
     @Override

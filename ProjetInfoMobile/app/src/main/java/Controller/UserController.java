@@ -79,7 +79,7 @@ public class UserController extends Observable {
     }
 
     public void CreateNewUser(final String username, final Bitmap profilePicture) {
-        Query usernameQuery = FirebaseInterface.Instance().GetUsersIDNode().equalTo(username, "username");
+        Query usernameQuery = FirebaseInterface.Instance().GetUsersNode().equalTo(username, "username");
         usernameQuery.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {

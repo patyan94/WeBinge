@@ -132,7 +132,6 @@ public class UserInfoCompletionFragment extends Fragment implements Observer {
             usernameEntry.setError("You must enter a valid username");
             return;
         }
-        FirebaseInterface.Instance().GetUserNode()
         BitmapDrawable profilPictureDrawable = (BitmapDrawable) profilePicture.getDrawable();
         Bitmap profilePictureBMP = null;
         if (profilPictureDrawable != null) {

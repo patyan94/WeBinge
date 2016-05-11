@@ -1,7 +1,9 @@
 package com.projetinfomobile;
 
+import android.app.Service;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.content.res.Configuration;
 import android.graphics.Color;
 import android.os.Bundle;
@@ -98,6 +100,10 @@ public class MainActivity extends AppCompatActivity
                 ShowRandomSerie();
             }
         });
+
+        // Starts the position updater service
+        Intent intent = new Intent(this, Services.PositionUpdaterService.class);
+        startService(intent);
 
         //Loading the "Your series" fragment at application start
         LoadFragment(new SeriesFragment());
