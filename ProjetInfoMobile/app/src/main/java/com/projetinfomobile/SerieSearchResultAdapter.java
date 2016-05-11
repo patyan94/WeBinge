@@ -7,7 +7,6 @@ import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
@@ -19,28 +18,23 @@ import com.android.volley.VolleyError;
 import com.android.volley.toolbox.ImageRequest;
 import com.android.volley.toolbox.Volley;
 
-import junit.framework.TestCase;
-
-import org.json.JSONObject;
-
 import java.util.ArrayList;
-import java.util.HashMap;
 
-import Model.DatabaseInterface;
-import Model.Serie;
+import Controller.UserController;
+import Model.SerieModel;
 
 /**
  * Created by yannd on 2016-04-05.
  * Adapter for the serie search results
  */
-public class SerieSearchResultAdapter extends RecyclerArrayAdapter<Serie, SerieSearchResultAdapter.ViewHolder> {
+public class SerieSearchResultAdapter extends RecyclerArrayAdapter<SerieModel, SerieSearchResultAdapter.ViewHolder> {
 
     RequestQueue imageRequests;
     private LayoutInflater inflater = null;
     private Context ctx;
 
     public SerieSearchResultAdapter(Context context){
-        super(new ArrayList<Serie>());
+        super(new ArrayList<SerieModel>());
         imageRequests = Volley.newRequestQueue(context);
         ctx = context;
     }
@@ -68,12 +62,12 @@ public class SerieSearchResultAdapter extends RecyclerArrayAdapter<Serie, SerieS
             addSerieButton =(Button)itemView.findViewById(R.id.add_serie_button);
             searchSerieTitle = (EditText) ((Activity) ctx).findViewById(R.id.search_serie_title);
         }
-        public void BindSerie(final Serie serie) {
+        public void BindSerie(final SerieModel serie) {
             title.setText(serie.getName());
             addSerieButton.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    DatabaseInterface.Instance().AddSerie(serie.getID());
+                    UserController.Instance().AddSerie(serie.getID());
 
                     //Clearing the results when a serie is selected.
                     SerieSearchResultAdapter.this.clear();

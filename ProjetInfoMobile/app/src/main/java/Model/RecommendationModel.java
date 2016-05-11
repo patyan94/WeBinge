@@ -6,15 +6,10 @@ import java.util.List;
 /**
  * Created by yannd on 2016-03-25.
  */
-public class Recommendation {
+public class RecommendationModel {
 
-    String serieID;
-    List<String> users;
-
-    Recommendation(){
-        users = new ArrayList<>();
-        serieID = "";
-    }
+    String serieID = "";
+    List<String> users = new ArrayList<>();
 
     public String getSerieID() {
         return serieID;
@@ -32,12 +27,12 @@ public class Recommendation {
         this.users = users;
     }
 
-    public void AddRecommendation(String user){
+    public void AddRecommendation(String user) {
         RemoveRecommendation(user);
         users.add(user);
     }
 
-    public void RemoveRecommendation(String user){
+    public void RemoveRecommendation(String user) {
         users.remove(user);
     }
 }

@@ -2,33 +2,20 @@ package com.projetinfomobile;
 
 import android.Manifest;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.pm.PackageManager;
-import android.graphics.Color;
 import android.location.Location;
 import android.os.Bundle;
 import android.support.v4.app.ActivityCompat;
-import android.support.v7.app.AlertDialog;
-import android.support.v7.widget.LinearLayoutManager;
-import android.support.v7.widget.RecyclerView;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
-import android.widget.ImageView;
-import android.widget.TextView;
 import android.widget.Toast;
 
-import com.android.volley.Response;
-import com.android.volley.VolleyError;
 import com.firebase.client.ChildEventListener;
 import com.firebase.client.DataSnapshot;
 import com.firebase.client.FirebaseError;
-import com.firebase.client.ValueEventListener;
 import com.firebase.geofire.GeoLocation;
 import com.firebase.geofire.GeoQueryEventListener;
-import com.firebase.ui.FirebaseRecyclerAdapter;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationListener;
@@ -42,23 +29,21 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 
-import org.json.JSONObject;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
-import Model.DatabaseInterface;
-import Model.OMDBInterface;
-import Model.Serie;
+import Controller.UserController;
+import Interfaces.FirebaseInterface;
 
 public class CloseUsersMapFragment extends SupportMapFragment
         implements OnMapReadyCallback, LocationListener, GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener {
 
+
+    private UserController userController = UserController.Instance();
     private HashMap<String, MarkerOptions> closeUsersLocations = new HashMap<>();
     private HashMap<String, Marker> actualMarkersUsers = new HashMap<>();
     private GoogleMap map;
-    private  Location mLastLocation;
     private GoogleApiClient mGoogleApiClient;
     LocationRequest mLocationRequest;
     private HashMap<String, List<String>> closeUsersSeries;
@@ -73,7 +58,7 @@ public class CloseUsersMapFragment extends SupportMapFragment
         super.onCreate(savedInstanceState);
 
         //TODO : show position of user AND surroundings only if the option is enabled - Also, do not update position in firebase at all if not enable
-        if(!DatabaseInterface.Instance().getUserData().isSharePosition()){
+        if(!userController.GetUserModel().isSharePosition()){
             Toast.makeText(getContext(), "In order to be able to use this functionality, please enable the location sharing setting", Toast.LENGTH_LONG).show();
         }
     }
@@ -103,7 +88,7 @@ public class CloseUsersMapFragment extends SupportMapFragment
     @Override
     public void onDetach() {
         super.onDetach();
-        DatabaseInterface.Instance().StopListeningToCloseUsers();
+        FirebaseInterface.Instance().StopListeningToCloseUsers();
         mGoogleApiClient.disconnect();
     }
 
@@ -138,27 +123,14 @@ public class CloseUsersMapFragment extends SupportMapFragment
     @Override
     public void onLocationChanged(Location location) {
         //if(mLastLocation != null && location.distanceTo(mLastLocation)<50.f)return;
-        DatabaseInterface.Instance().StartListeningToCloseUsers(location, 1000.f, geoQueryEventListener);
-        DatabaseInterface.Instance().UpdateGeoQueryPosition(location);
-        DatabaseInterface.Instance().UpdateUserPosition(location);
-        mLastLocation = location;
+        FirebaseInterface.Instance().StartListeningToCloseUsers(location, 1000.f, geoQueryEventListener);
+        FirebaseInterface.Instance().UpdateGeoQueryPosition(location);
+        userController.UpdateUserPosition(location);
     }
 
     @Override
     public void onConnectionFailed(ConnectionResult connectionResult) {
 
-    }
-
-    @Override
-    public void onStart(){
-        super.onStart();
-        RessourceMonitor.getInstance().SaveCurrentBatteryLevel();
-    }
-
-    @Override
-    public void onStop(){
-        super.onStop();
-        Toast.makeText(getContext(), "Map battery usage : " + String.valueOf(RessourceMonitor.getInstance().GetLastBatteryUsage()), Toast.LENGTH_LONG).show();
     }
 
     @Override
@@ -171,7 +143,7 @@ public class CloseUsersMapFragment extends SupportMapFragment
                 String username = marker.getTitle();
 
                 //If we clicked on ourselves we don't do anything special
-                if (DatabaseInterface.Instance().getUserData().getUsername().equalsIgnoreCase(username)) {
+                if (userController.GetUserModel().getUsername().equalsIgnoreCase(username)) {
                     return true;
                 } else {
                     MainActivity.PromptUserSeries(username, getContext());
@@ -226,18 +198,18 @@ public class CloseUsersMapFragment extends SupportMapFragment
         actualMarkersUsers.put(pos.getTitle(), m);
 
         //For the marker of the current user, show it in a distinctive colour
-        if (pos.getTitle().equalsIgnoreCase(DatabaseInterface.Instance().getUserData().getUsername())) {
+        if (pos.getTitle().equalsIgnoreCase(userController.GetUserModel().getUsername())) {
             m.setIcon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE));
         } else {
             m.setIcon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED));
-            DatabaseInterface.Instance().GetSeriesListNode(pos.getTitle()).addChildEventListener(new ChildEventListener() {
+            FirebaseInterface.Instance().GetSeriesListNode(pos.getTitle()).addChildEventListener(new ChildEventListener() {
                 @Override
                 public void onChildAdded(DataSnapshot dataSnapshot, String s) {
                     if (!closeUsersSeries.containsKey(dataSnapshot.getKey())) {
                         closeUsersSeries.put(dataSnapshot.getKey(), new ArrayList<String>());
                     }
                     closeUsersSeries.get(dataSnapshot.getKey()).add(dataSnapshot.getValue(String.class));
-                    if (DatabaseInterface.Instance().GetCurrentUserData().getSeriesList().containsKey(dataSnapshot.getKey())) {
+                    if (userController.GetUserModel().getSeriesList().contains(dataSnapshot.getKey())) {
                         m.setIcon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN));
                     }
                 }
@@ -253,7 +225,7 @@ public class CloseUsersMapFragment extends SupportMapFragment
                         closeUsersSeries.get(dataSnapshot.getKey()).remove(dataSnapshot.getValue(String.class));
                     }
                     for (String s : closeUsersSeries.get(dataSnapshot.getKey())) {
-                        if (DatabaseInterface.Instance().GetCurrentUserData().getSeriesList().containsKey(s)) {
+                        if (userController.GetUserModel().getSeriesList().contains(s)) {
                             m.setIcon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN));
                             return;
                         }

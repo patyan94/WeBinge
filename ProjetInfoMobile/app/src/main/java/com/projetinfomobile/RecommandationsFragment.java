@@ -1,12 +1,9 @@
 package com.projetinfomobile;
 
-import android.content.Context;
-import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -20,16 +17,18 @@ import com.firebase.ui.FirebaseRecyclerAdapter;
 
 import org.json.JSONObject;
 
-import Model.DatabaseInterface;
+import Controller.UserController;
+import Interfaces.FirebaseInterface;
 import Model.OMDBInterface;
-import Model.Recommendation;
-import Model.Serie;
+import Model.RecommendationModel;
+import Model.SerieModel;
 
 
 public class RecommandationsFragment extends Fragment {
-    FirebaseRecyclerAdapter<Recommendation, RecommendedSerieViewHolder> recommendedSeriesAdapter;
+    FirebaseRecyclerAdapter<RecommendationModel, RecommendedSerieViewHolder> recommendedSeriesAdapter;
     RecyclerView recommendedSeriesView;
     OMDBInterface omdbInterface;
+    private UserController userController = UserController.Instance();
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -40,26 +39,26 @@ public class RecommandationsFragment extends Fragment {
 
         // Setups the view for the list of recommendations
         recommendedSeriesView = (RecyclerView)view.findViewById(R.id.recommendation_recyclerView);
-        recommendedSeriesAdapter = new FirebaseRecyclerAdapter<Recommendation, RecommendedSerieViewHolder>(Recommendation.class, R.layout.series_suggsetion_listview_item, RecommendedSerieViewHolder.class, DatabaseInterface.Instance().GetCurrentUserSeriesSuggestionNode()) {
+        recommendedSeriesAdapter = new FirebaseRecyclerAdapter<RecommendationModel, RecommendedSerieViewHolder>(RecommendationModel.class, R.layout.series_suggsetion_listview_item, RecommendedSerieViewHolder.class, FirebaseInterface.Instance().GetSeriesSuggestionNode(userController.GetUserModel().getUsername())) {
             @Override
-            protected void populateViewHolder(final RecommendedSerieViewHolder recommendedSerieViewHolder, final Recommendation r, int i) {
+            protected void populateViewHolder(final RecommendedSerieViewHolder recommendedSerieViewHolder, final RecommendationModel r, int i) {
                 recommendedSerieViewHolder.addRecommendationSerieButton.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
-                        DatabaseInterface.Instance().AddSerie(r.getSerieID());
+                        userController.AddSerie(r.getSerieID());
                     }
                 });
                 recommendedSerieViewHolder.removeRecommendationButton.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
-                        DatabaseInterface.Instance().RefuseSerieSuggestion(r.getSerieID());
+                        userController.RefuseSerieSuggestion(r.getSerieID());
                     }
                 });
                 omdbInterface.GetSerieInfo(r.getSerieID(), new Response.Listener<JSONObject>() {
                     @Override
                     public void onResponse(JSONObject response) {
                         try {
-                            Serie serie = Serie.FromJSONObject(response);
+                            SerieModel serie = SerieModel.FromJSONObject(response);
                             recommendedSerieViewHolder.title.setText(serie.getName());
                             recommendedSerieViewHolder.description.setText(serie.getDescription());
                             if (!serie.getPhotoURL().equalsIgnoreCase("N/A")) {

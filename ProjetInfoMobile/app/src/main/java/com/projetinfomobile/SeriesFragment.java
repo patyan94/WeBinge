@@ -20,7 +20,6 @@ import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.MultiAutoCompleteTextView;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
@@ -36,9 +35,10 @@ import org.json.JSONObject;
 import java.util.ArrayList;
 import java.util.List;
 
-import Model.DatabaseInterface;
+import Controller.UserController;
+import Interfaces.FirebaseInterface;
 import Model.OMDBInterface;
-import Model.Serie;
+import Model.SerieModel;
 
 public class SeriesFragment extends Fragment {
 
@@ -48,16 +48,18 @@ public class SeriesFragment extends Fragment {
         ImageView posterView;
         Button removeSerieButton;
         Button recommendSerieButton;
+
         public WatchedSerieViewHolder(View itemView) {
             super(itemView);
-            title = (TextView)itemView.findViewById(R.id.serie_name);
-            description = (TextView)itemView.findViewById(R.id.serie_description);
-            posterView = (ImageView)itemView.findViewById(R.id.serie_poster);
-            removeSerieButton =(Button)itemView.findViewById(R.id.remove_serie_button);
-            recommendSerieButton =(Button)itemView.findViewById(R.id.recommend_serie_button);
+            title = (TextView) itemView.findViewById(R.id.serie_name);
+            description = (TextView) itemView.findViewById(R.id.serie_description);
+            posterView = (ImageView) itemView.findViewById(R.id.serie_poster);
+            removeSerieButton = (Button) itemView.findViewById(R.id.remove_serie_button);
+            recommendSerieButton = (Button) itemView.findViewById(R.id.recommend_serie_button);
         }
     }
 
+    private UserController userController = UserController.Instance();
     Button searchSeriesButton;
     EditText searchSerieTitle;
     RecyclerView searchSerieResults;
@@ -73,8 +75,8 @@ public class SeriesFragment extends Fragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
 
         // Setup the autocomplete friend finder
-        autoCompleteFriendAdapter = new ArrayAdapter<String>(getContext(),android.R.layout.simple_dropdown_item_1line, autoCompleteFriendsSuggestions);
-        DatabaseInterface.Instance().GetCurrentUserFriendListNode().addChildEventListener(new ChildEventListener() {
+        autoCompleteFriendAdapter = new ArrayAdapter<String>(getContext(), android.R.layout.simple_dropdown_item_1line, autoCompleteFriendsSuggestions);
+        FirebaseInterface.Instance().GetFriendListNode(userController.GetUserModel().getUsername()).addChildEventListener(new ChildEventListener() {
             @Override
             public void onChildAdded(DataSnapshot dataSnapshot, String s) {
                 autoCompleteFriendAdapter.add(dataSnapshot.getValue(String.class));
@@ -107,20 +109,18 @@ public class SeriesFragment extends Fragment {
         View view = inflater.inflate(R.layout.fragment_series, container, false);
 
         // Search serie button
-        searchSeriesButton = (Button)view.findViewById(R.id.search_serie_button);
+        searchSeriesButton = (Button) view.findViewById(R.id.search_serie_button);
         searchSeriesButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 serieSearchResultAdapter.clear();
                 currentSearchPage = 1;
                 omdbInterface.SearchSerie(searchSerieTitle.getText().toString().trim(), currentSearchPage, onSerieSearchResponse, onSerieSearchError);
-
-                RessourceMonitor.getInstance().SaveCurrentBatteryLevel();
             }
         });
 
         // The title of the serie to search
-        searchSerieTitle = (EditText)view.findViewById(R.id.search_serie_title);
+        searchSerieTitle = (EditText) view.findViewById(R.id.search_serie_title);
         searchSerieTitle.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {
@@ -142,22 +142,22 @@ public class SeriesFragment extends Fragment {
 
         searchSerieTitle.requestFocus();
         if (getActivity().getCurrentFocus() != null) {
-            InputMethodManager inputMethodManager=(InputMethodManager)getActivity().getSystemService(Context.INPUT_METHOD_SERVICE);
+            InputMethodManager inputMethodManager = (InputMethodManager) getActivity().getSystemService(Context.INPUT_METHOD_SERVICE);
             inputMethodManager.toggleSoftInputFromWindow(getActivity().getCurrentFocus().getApplicationWindowToken(), InputMethodManager.SHOW_FORCED, 0);
         }
 
         // Setup the recycler views
-        watchedSeriesListview = (RecyclerView)view.findViewById(R.id.series_listview);
+        watchedSeriesListview = (RecyclerView) view.findViewById(R.id.series_listview);
         watchedSeriesListview.setHasFixedSize(true);
         watchedSeriesListview.setLayoutManager(new LinearLayoutManager(getContext()));
-        searchSerieResults = (RecyclerView)view.findViewById(R.id.search_results_recyclerview);
+        searchSerieResults = (RecyclerView) view.findViewById(R.id.search_results_recyclerview);
         searchSerieResults.setHasFixedSize(true);
         searchSerieResults.setLayoutManager(new LinearLayoutManager(getContext()));
         searchSerieResults.setAdapter(serieSearchResultAdapter);
 
 
         // Populates the list with each serie watched
-        watchedSeriesAdapter = new FirebaseRecyclerAdapter<String, WatchedSerieViewHolder>(String.class, R.layout.series_listview_item, WatchedSerieViewHolder.class,DatabaseInterface.Instance().GetCurrentUserSeriesListNode()) {
+        watchedSeriesAdapter = new FirebaseRecyclerAdapter<String, WatchedSerieViewHolder>(String.class, R.layout.series_listview_item, WatchedSerieViewHolder.class, FirebaseInterface.Instance().GetSeriesListNode(userController.GetUserModel().getUsername())) {
             @Override
             protected void populateViewHolder(final WatchedSerieViewHolder view, final String serieID, int position) {
                 Log.i("Populate", serieID);
@@ -166,7 +166,7 @@ public class SeriesFragment extends Fragment {
                 view.removeSerieButton.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
-                        DatabaseInterface.Instance().DeleteSerie(serieID);
+                        UserController.Instance().DeleteSerie(serieID);
                     }
                 });
                 view.recommendSerieButton.setOnClickListener(new View.OnClickListener() {
@@ -181,10 +181,10 @@ public class SeriesFragment extends Fragment {
                         try {
                             Log.i("Response", serieID);
 
-                            Serie serie = Serie.FromJSONObject(response);
+                            SerieModel serie = SerieModel.FromJSONObject(response);
                             view.title.setText(serie.getName());
                             view.description.setText(serie.getDescription());
-                            if(!serie.getPhotoURL().equalsIgnoreCase("N/A")) {
+                            if (!serie.getPhotoURL().equalsIgnoreCase("N/A")) {
                                 omdbInterface.GetPoster(serie.getPhotoURL(), view.posterView);
                             }
                             view.recommendSerieButton.setEnabled(true);
@@ -218,17 +218,16 @@ public class SeriesFragment extends Fragment {
         public void onResponse(JSONObject response) {
             try {
                 JSONArray results = response.getJSONArray("Search");
-                for(int i = 0; i<results.length(); ++i){
-                    serieSearchResultAdapter.add(Serie.FromJSONObject(results.getJSONObject(i)));
+                for (int i = 0; i < results.length(); ++i) {
+                    serieSearchResultAdapter.add(SerieModel.FromJSONObject(results.getJSONObject(i)));
                 }
                 int nbResults = response.getInt("totalResults");
                 //Continue the search if we didnt get all the results
-                if(serieSearchResultAdapter.getItemCount() < nbResults){
+                if (serieSearchResultAdapter.getItemCount() < nbResults) {
                     omdbInterface.SearchSerie(searchSerieTitle.getText().toString(), ++currentSearchPage, onSerieSearchResponse, onSerieSearchError);
-                }
-                else{
+                } else {
                     if (getActivity().getCurrentFocus() != null) {
-                        InputMethodManager inputMethodManager=(InputMethodManager)getActivity().getSystemService(Context.INPUT_METHOD_SERVICE);
+                        InputMethodManager inputMethodManager = (InputMethodManager) getActivity().getSystemService(Context.INPUT_METHOD_SERVICE);
                         inputMethodManager.toggleSoftInputFromWindow(getActivity().getCurrentFocus().getApplicationWindowToken(), InputMethodManager.HIDE_NOT_ALWAYS, 0);
                         inputMethodManager.toggleSoftInputFromWindow(getActivity().getCurrentFocus().getApplicationWindowToken(), InputMethodManager.HIDE_IMPLICIT_ONLY, 0);
                     }
@@ -238,8 +237,6 @@ public class SeriesFragment extends Fragment {
             } catch (JSONException e) {
                 e.printStackTrace();
             }
-
-            Toast.makeText(getContext(), "Serie search battery usage : " + String.valueOf(RessourceMonitor.getInstance().GetLastBatteryUsage()), Toast.LENGTH_LONG).show();
         }
     };
 
@@ -251,7 +248,7 @@ public class SeriesFragment extends Fragment {
     };
 
     // Shows a dialog to send a serie recommendation to multiple friends at the time
-    void RecommendSerie(final String serieID, String serieName){
+    void RecommendSerie(final String serieID, String serieName) {
         AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
         builder.setTitle("Recommend " + serieName);
 
@@ -267,7 +264,7 @@ public class SeriesFragment extends Fragment {
             public void onClick(DialogInterface dialog, int which) {
                 String[] friends = input.getText().toString().split(", ");
                 for (int i = 0; i < friends.length; ++i) {
-                    DatabaseInterface.Instance().SendSerieSuggestion(friends[i], serieID);
+                    userController.SendSerieSuggestion(friends[i], serieID);
                 }
             }
         });

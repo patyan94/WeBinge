@@ -25,16 +25,4 @@
     <string name="title_activity_user_info_completion">UserInfoCompletionActivity</string>
     <string name="google_maps_key">AIzaSyDu5wxPyXim25QzSafFEI33pXLxJQ2bMcw</string>
 
-
-    <string name="default_background_color">Default</string>
-    <string name="white_color">White</string>
-    <string name="grey_color">Grey</string>
-    <string name="dark_color">Dark</string>
-
-    <string-array name="background_colors">
-        <item>@string/default_background_color</item>
-        <item>@string/white_color</item>
-        <item>@string/grey_color</item>
-        <item>@string/dark_color</item>
-    </string-array>
 </resources>

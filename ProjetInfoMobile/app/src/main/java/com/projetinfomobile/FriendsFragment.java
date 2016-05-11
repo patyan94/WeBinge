@@ -14,7 +14,6 @@ import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
 import android.widget.Button;
 import android.widget.ImageView;
-import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -22,13 +21,13 @@ import com.firebase.client.ChildEventListener;
 import com.firebase.client.DataSnapshot;
 import com.firebase.client.FirebaseError;
 import com.firebase.client.ValueEventListener;
-import com.firebase.ui.FirebaseListAdapter;
 import com.firebase.ui.FirebaseRecyclerAdapter;
 
 import java.util.ArrayList;
 
-import Model.DatabaseInterface;
-import Model.UserData;
+import Controller.UserController;
+import Interfaces.FirebaseInterface;
+import Model.UserModel;
 
 // Fragment to show the friends and friend resuqests received
 public class FriendsFragment extends Fragment {
@@ -37,12 +36,13 @@ public class FriendsFragment extends Fragment {
         ImageView profilePicture;
         Button acceptButton;
         Button denyButton;
+
         public FriendRequestViewHolder(View itemView) {
             super(itemView);
-            username = (TextView)itemView.findViewById(R.id.username);
-            profilePicture = (ImageView)itemView.findViewById(R.id.profile_picture);
-            acceptButton =(Button)itemView.findViewById(R.id.accept);
-            denyButton =(Button)itemView.findViewById(R.id.deny);
+            username = (TextView) itemView.findViewById(R.id.username);
+            profilePicture = (ImageView) itemView.findViewById(R.id.profile_picture);
+            acceptButton = (Button) itemView.findViewById(R.id.accept);
+            denyButton = (Button) itemView.findViewById(R.id.deny);
         }
     }
 
@@ -50,14 +50,16 @@ public class FriendsFragment extends Fragment {
         TextView username;
         ImageView profilePicture;
         Button deleteButton;
+
         public FriendViewHolder(View itemView) {
             super(itemView);
-            username = (TextView)itemView.findViewById(R.id.username);
-            profilePicture = (ImageView)itemView.findViewById(R.id.profile_picture);
-            deleteButton =(Button)itemView.findViewById(R.id.delete_friend_button);
+            username = (TextView) itemView.findViewById(R.id.username);
+            profilePicture = (ImageView) itemView.findViewById(R.id.profile_picture);
+            deleteButton = (Button) itemView.findViewById(R.id.delete_friend_button);
         }
     }
 
+    private UserController userController = UserController.Instance();
     RecyclerView friendRequestsListview;
     RecyclerView friendListview;
     FirebaseRecyclerAdapter<String, FriendViewHolder> friendsListAdapter;
@@ -78,25 +80,25 @@ public class FriendsFragment extends Fragment {
         View fragmentView = inflater.inflate(R.layout.fragment_friends, container, false);
 
         // Sends a friend request
-        addFriendButton = (Button)fragmentView.findViewById(R.id.add_friend_button);
+        addFriendButton = (Button) fragmentView.findViewById(R.id.add_friend_button);
         addFriendButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                for(int i = 0; i < friendsListAdapter.getItemCount(); i++){
-                    if(friendsListAdapter.getItem(i).toString().equalsIgnoreCase(friendSearchAutocomplete.getText().toString())){
+                for (int i = 0; i < friendsListAdapter.getItemCount(); i++) {
+                    if (friendsListAdapter.getItem(i).toString().equalsIgnoreCase(friendSearchAutocomplete.getText().toString())) {
                         Toast.makeText(getContext(), "This user is already in your friend list", Toast.LENGTH_SHORT).show();
                         return;
                     }
                 }
 
-                DatabaseInterface.Instance().SendFriendRequest(friendSearchAutocomplete.getText().toString());
+                userController.SendFriendRequest(friendSearchAutocomplete.getText().toString());
                 friendSearchAutocomplete.setText("");
                 Toast.makeText(getContext(), "Invitation sent", Toast.LENGTH_SHORT).show();
             }
         });
 
         // Setup the autocomplete for friend search
-        friendSearchAutocomplete = (AutoCompleteTextView)fragmentView.findViewById(R.id.friend_search_entry);
+        friendSearchAutocomplete = (AutoCompleteTextView) fragmentView.findViewById(R.id.friend_search_entry);
         autoCompleteAdapter = new ArrayAdapter<String>(FriendsFragment.this.getActivity(),
                 android.R.layout.simple_dropdown_item_1line, autoCompleteSuggestions);
         friendSearchAutocomplete.setAdapter(autoCompleteAdapter);
@@ -113,18 +115,18 @@ public class FriendsFragment extends Fragment {
 
             @Override
             public void afterTextChanged(Editable s) {
-                addFriendButton.setEnabled(s.length()>3);
+                addFriendButton.setEnabled(s.length() > 3);
             }
         });
 
 
         // Setup the recycler views
-        friendListview = (RecyclerView)fragmentView.findViewById(R.id.friends_listview);
+        friendListview = (RecyclerView) fragmentView.findViewById(R.id.friends_listview);
         friendListview.setHasFixedSize(true);
         friendListview.setLayoutManager(new LinearLayoutManager(getContext()));
 
         // Setup the view for the list of friend
-        friendsListAdapter = new FirebaseRecyclerAdapter<String, FriendViewHolder>(String.class, R.layout.friends_listview_item, FriendViewHolder.class, DatabaseInterface.Instance().GetCurrentUserFriendListNode()) {
+        friendsListAdapter = new FirebaseRecyclerAdapter<String, FriendViewHolder>(String.class, R.layout.friends_listview_item, FriendViewHolder.class, FirebaseInterface.Instance().GetFriendListNode(userController.GetUserModel().getUsername())) {
             @Override
             protected void populateViewHolder(final FriendViewHolder view, final String username, int position) {
                 Log.i("Populate", username);
@@ -138,16 +140,16 @@ public class FriendsFragment extends Fragment {
                 view.deleteButton.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
-                        DatabaseInterface.Instance().DeleteFriend(username);
+                        userController.DeleteFriend(username);
                     }
                 });
                 // Fetch the user photo
-                DatabaseInterface.Instance().GetUserDataNode(username).addListenerForSingleValueEvent(new ValueEventListener() {
+                FirebaseInterface.Instance().GetUserDataNode(username).addListenerForSingleValueEvent(new ValueEventListener() {
                     @Override
                     public void onDataChange(DataSnapshot dataSnapshot) {
-                        UserData userData = dataSnapshot.getValue(UserData.class);
-                        if (userData.getUserProfileImage() != null) {
-                            view.profilePicture.setImageBitmap(userData.getUserProfileImage());
+                        UserModel userData = dataSnapshot.getValue(UserModel.class);
+                        if (userData.getUserProfilePicture() != null) {
+                            view.profilePicture.setImageBitmap(userData.getUserProfilePicture());
                         }
                     }
 
@@ -162,35 +164,35 @@ public class FriendsFragment extends Fragment {
 
 
         // Setup the recycler views
-        friendRequestsListview = (RecyclerView)fragmentView.findViewById(R.id.friends_requests_listview);
+        friendRequestsListview = (RecyclerView) fragmentView.findViewById(R.id.friends_requests_listview);
         friendRequestsListview.setHasFixedSize(true);
         friendRequestsListview.setLayoutManager(new LinearLayoutManager(getContext()));
 
         // Setups the view for the friend requests
-        friendsRequestListAdapter = new FirebaseRecyclerAdapter<String, FriendRequestViewHolder>(String.class, R.layout.friend_request_listview_item, FriendRequestViewHolder.class, DatabaseInterface.Instance().GetCurrentUserReceivedFriendRequestsNode()) {
+        friendsRequestListAdapter = new FirebaseRecyclerAdapter<String, FriendRequestViewHolder>(String.class, R.layout.friend_request_listview_item, FriendRequestViewHolder.class, FirebaseInterface.Instance().GetReceivedFriendRequestsNode(userController.GetUserModel().getUsername())) {
             @Override
             protected void populateViewHolder(final FriendRequestViewHolder view, final String username, int position) {
                 view.username.setText(username);
                 view.acceptButton.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
-                        DatabaseInterface.Instance().AcceptFriendRequest(username);
+                        userController.AcceptFriendRequest(username);
                     }
                 });
                 view.denyButton.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
-                        DatabaseInterface.Instance().RefuseFriendRequest(username);
+                        userController.RefuseFriendRequest(username);
                     }
                 });
 
                 // Fetch the user photo
-                DatabaseInterface.Instance().GetUserDataNode(username).addListenerForSingleValueEvent(new ValueEventListener() {
+                FirebaseInterface.Instance().GetUserDataNode(username).addListenerForSingleValueEvent(new ValueEventListener() {
                     @Override
                     public void onDataChange(DataSnapshot dataSnapshot) {
-                        UserData userData = dataSnapshot.getValue(UserData.class);
-                        if (userData.getUserProfileImage() != null) {
-                            view.profilePicture.setImageBitmap(userData.getUserProfileImage());
+                        UserModel userData = dataSnapshot.getValue(UserModel.class);
+                        if (userData.getUserProfilePicture() != null) {
+                            view.profilePicture.setImageBitmap(userData.getUserProfilePicture());
                         }
                     }
 
@@ -204,13 +206,13 @@ public class FriendsFragment extends Fragment {
         friendRequestsListview.setAdapter(friendsRequestListAdapter);
 
         // Keeps the users list up to date for the autocomplete
-        usernameQuery = DatabaseInterface.Instance().GetUsersIDNode();
+        usernameQuery = FirebaseInterface.Instance().GetUsersIDNode();
         usernameQuery.addChildEventListener(new ChildEventListener() {
             @Override
             public void onChildAdded(DataSnapshot dataSnapshot, String s) {
                 if (dataSnapshot != null) {
                     String val = (String) dataSnapshot.getValue();
-                    if(!DatabaseInterface.Instance().GetCurrentUserData().getUsername().equals(val))
+                    if (!userController.GetUserModel().getUsername().equals(val))
                         autoCompleteAdapter.add(val);
                 }
             }

@@ -6,20 +6,20 @@ import org.json.JSONObject;
 /**
  * Created by yannd on 2016-03-25.
  */
-public class Serie {
+public class SerieModel {
     String name;
     String ID;
     String photoURL;
     String description;
 
-    Serie(){}
-    public Serie(String name, String ID, String photoURL) {
+    SerieModel(){}
+    public SerieModel(String name, String ID, String photoURL) {
         this.name = name;
         this.ID = ID;
         this.photoURL = photoURL;
     }
 
-    public Serie(String name, String ID, String photoURL, String description) {
+    public SerieModel(String name, String ID, String photoURL, String description) {
         this.name = name;
         this.ID = ID;
         this.photoURL = photoURL;
@@ -58,8 +58,8 @@ public class Serie {
         this.description = description;
     }
 
-    public static Serie FromJSONObject(JSONObject json){
-        Serie serie = new Serie();
+    public static SerieModel FromJSONObject(JSONObject json){
+        SerieModel serie = new SerieModel();
         try {
             serie.name = json.getString("Title");
             serie.ID = json.getString("imdbID");
